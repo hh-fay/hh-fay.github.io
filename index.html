@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--<link href="css/style.css" rel="stylesheet">-->
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600" style="border:1px solid #000"></canvas>
+
+</body>
+
+</html>
+<script>
+    var canvas = document.querySelector("#canvas");
+
+    var opt = {
+        bigX: 400,
+        bigY: 300,
+        bigR: 200,
+        bigColor: "#335F9A",
+        bigLineWidth: 10,
+        tick: {
+            //小刻度线
+            small: {
+                length: 15,
+                width: 4
+            },
+            //大刻度线
+            big: {
+                length: 26,
+                width: 8
+            }
+        },
+        canvas: canvas
+
+    }
+
+    function Clock(opt) {
+
+        if (!opt) {
+            throw new Error("请提供参数");
+        }
+
+        for (var key in opt) {
+            this[key] = opt[key];
+        }
+
+        var requireArgs = "bigX,bigY,bigR".split(",");
+        requireArgs.forEach(function(v) {
+            if (!this[v]) {
+                throw new Error("请提供参数" + v);
+            }
+        }, this);
+
+        var defalutOpt = {
+            bigColor: "#335F9A",
+            bigLineWidth: 2
+        };
+
+        for (var key in defalutOpt) {
+            this[key] = opt[key] || defalutOpt[key];
+        }
+
+        this.ctx = this.canvas.getContext('2d');
+
+        this.ctx.font = "20px 微软雅黑";
+        this.ctx.textAlign = "center";
+        this.ctx.textBaseline = "middle";
+
+        this.init();
+
+    }
+
+    Clock.prototype = {
+        constructor: Clock,
+        init: function() {
+
+            var _this = this;
+
+            this.BigCircle();
+            // 刻度
+            this.Ticks();
+
+            // 指针
+            this.pointer();
+
+
+            setInterval(function() {
+
+                _this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                _this.BigCircle();
+                // 刻度
+                _this.Ticks();
+
+                // 指针
+                _this.pointer();
+            }, 1000)
+
+        },
+        //  表盘
+        BigCircle: function() {
+            var ctx = this.ctx;
+
+            ctx.beginPath();
+
+            ctx.arc(this.bigX, this.bigY, this.bigR, 0, 2 * Math.PI);
+            ctx.lineWidth = this.bigLineWidth;
+            ctx.strokeStyle = this.bigColor;
+
+            ctx.stroke();
+
+        },
+        // 刻度
+        Ticks: function() {
+            var ctx = this.ctx;
+
+            var stratRadian = -Math.PI / 3;
+
+            for (var i = 0; i < 60; i++) {
+
+                // 处理刻度线的宽和高
+
+                length = this.tick[i % 5 == 0 ? "big" : "small"].length;
+                width = this.tick[i % 5 == 0 ? "big" : "small"].width;
+
+                //  相邻刻度间的弧度差
+
+                var singleRadian = 2 * Math.PI / 60;
+
+                //    每个刻度的弧度值
+                var radian = stratRadian + singleRadian * i;
+
+
+                var x1 = this.bigX + (this.bigR - width / 2) * Math.sin(radian);
+                var y1 = this.bigY + (this.bigR - width / 2) * Math.cos(radian);
+
+                // 终点坐标
+
+                var zx1 = this.bigX + (this.bigR - length) * Math.sin(radian);
+                var zy1 = this.bigY + (this.bigR - length) * Math.cos(radian);
+
+                ctx.beginPath();
+                ctx.lineWidth = width;
+
+
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(zx1, zy1);
+
+
+                ctx.stroke();
+
+                if (i % 5 == 0) {
+                    this.text(i / 5 + 1, radian);
+                }
+
+            }
+
+        },
+        // 画数字
+        text: function(text, radian) {
+
+            var ctx = this.ctx;
+
+            var x = this.bigX + (this.bigR - this.tick["big"].width - 40) * Math.cos(radian);
+            var y = this.bigY + (this.bigR - this.tick["big"].width - 40) * Math.sin(radian);
+
+
+            ctx.beginPath();
+            ctx.fillText(text, x, y);
+
+        },
+        // 画指针
+        pointer: function() {
+
+            var date = new Date();
+
+            //、获取时分秒的值
+            var hour = date.getHours() % 12;
+            var minute = date.getMinutes();
+            var second = date.getSeconds();
+
+            // 时针
+            var hRadian = hour * 2 * Math.PI / 12;
+            var hLength = 60;
+            this.singlePoint(hLength, hRadian, "black");
+
+            // 分针
+            var mRadian = minute * 2 * Math.PI / 60 - Math.PI / 6;
+            var mLength = 80;
+            this.singlePoint(mLength, mRadian, "blue");
+
+            // 秒针
+            var sRadian = second * 2 * Math.PI / 60 - Math.PI / 6;
+            var sLength = 120;
+            this.singlePoint(sLength, sRadian, "red");
+
+            // 确定指针长度
+
+        },
+        singlePoint: function(length, radian, color) {
+
+            var ctx = this.ctx;
+
+            var x = this.bigX + length * Math.cos(radian - Math.PI / 3);
+            var y = this.bigY + length * Math.sin(radian - Math.PI / 3);
+
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+
+            ctx.moveTo(this.bigX, this.bigY);
+            ctx.lineTo(x, y);
+
+            ctx.stroke();
+
+
+
+
+        }
+
+
+    }
+
+    var newClock = new Clock(opt);
+</script>
